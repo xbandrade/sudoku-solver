@@ -1,7 +1,7 @@
 import sudokuLists
 from sudokuLists import *
-from termcolor import colored, cprint
 from itertools import combinations
+# from termcolor import colored, cprint
 
 board = []
 board_start = []
@@ -462,11 +462,11 @@ def y_wing():
                             for p in [q for q in box_list[box_position[b]] if q in row_list[r[0]]]:
                                 if p in candidates and n in candidates[p]:
                                     candidates[p].remove(n)
-                                    print(p, candidates[p])
+                                    # print(p, candidates[p])
                             for p in [q for q in box_list[box_position[r]] if q in row_list[b[0]]]:
                                 if p in candidates and n in candidates[p]:
                                     candidates[p].remove(n)
-                                    print(p, candidates[p])
+                                    # print(p, candidates[p])
                             found_wing = True
                             break  # breaks boxes loop
                 if found_wing:
@@ -511,33 +511,32 @@ def y_wing():
             if found_wing:
                 continue  # breaks pivot loop
 
-
-def print_board():
-    for i in range(9):
-        for j in range(9):
-            param = None if box_position[(i, j)] % 2 == 0 else 'on_grey'
-            if (i, j) in empty_pos:
-                if board[i][j] != 0:
-                    cprint(colored(f' {board[i][j]} ', 'green', param), end='')
-                else:
-                    cprint(colored(' - ', 'red', param), end='')
-            else:
-                cprint(colored(f' {board[i][j]} ', 'white', param), end='')
-        print('')
-
-
-def print_final():
-    for i in range(9):
-        for j in range(9):
-            param = None if box_position[(i, j)] % 2 == 0 else 'on_grey'
-            if (i, j) in sudokuLists.empty_start:
-                if board[i][j] != 0:
-                    cprint(colored(f' {board[i][j]} ', 'green', param), end='')
-                else:
-                    cprint(colored(' - ', 'green', param), end='')
-            else:
-                cprint(colored(f' {board[i][j]} ', 'yellow', param), end='')
-        print('')
+# def print_board():
+#     for i in range(9):
+#         for j in range(9):
+#             param = None if box_position[(i, j)] % 2 == 0 else 'on_grey'
+#             if (i, j) in empty_pos:
+#                 if board[i][j] != 0:
+#                     cprint(colored(f' {board[i][j]} ', 'green', param), end='')
+#                 else:
+#                     cprint(colored(' - ', 'red', param), end='')
+#             else:
+#                 cprint(colored(f' {board[i][j]} ', 'white', param), end='')
+#         print('')
+#
+#
+# def print_final():
+#     for i in range(9):
+#         for j in range(9):
+#             param = None if box_position[(i, j)] % 2 == 0 else 'on_grey'
+#             if (i, j) in sudokuLists.empty_start:
+#                 if board[i][j] != 0:
+#                     cprint(colored(f' {board[i][j]} ', 'green', param), end='')
+#                 else:
+#                     cprint(colored(' - ', 'green', param), end='')
+#             else:
+#                 cprint(colored(f' {board[i][j]} ', 'yellow', param), end='')
+#         print('')
 
 
 def solver():
@@ -572,9 +571,9 @@ def solver():
     if solved:
         print(f'\nProblem solved!')
         # print(sudokuLists.first_pos)
-        print_final()
+        # print_final()
         return board
     else:
-        print_board()
+        # print_board()
         print(f'\nFailed to solve the problem!\n')
         return None

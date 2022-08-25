@@ -24,6 +24,9 @@ def main():
     app.answers_buttons('Solve Board', width=11, btn=2)
     app.clear_board('Clear Board', width=11)
     app.board_edit('Edit Board', width=11)
+    app.info_button()
+    app.github_button()
+    # Add image to button
     canvas.pack(fill=tk.BOTH, expand=True)
     # root.deiconify()
     app.mainloop()
