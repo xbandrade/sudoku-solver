@@ -1,10 +1,10 @@
 import tkinter as tk
-import sudokuSolver
-import sudokuLists
+import sudoku_solver
+import sudoku_lists
+import webbrowser
 from tkinter import messagebox
 from config import *
 from idlelib.tooltip import Hovertip
-import webbrowser
 
 
 def open_url():
@@ -30,7 +30,7 @@ def clear_answers(app):
     print(f'Hiding answers...')
     for p in range(9):
         for q in range(9):
-            if sudokuSolver.board_start[p][q] == 0:
+            if sudoku_solver.board_start[p][q] == 0:
                 app.entries[9 * p + q].delete(0, tk.END)
 
 
@@ -43,12 +43,12 @@ def edit_board(app):
 
 def clear_entries(app):
     print('Clearing board...')
-    sudokuSolver.clear_b()
+    sudoku_solver.clear_b()
     app.canvas.delete('txt')
     for p in range(81):
         app.entries[p].config(state='normal', fg='#3C0238')
         app.entries[p].delete(0, tk.END)
-    app.insert_text(f'Custom board', margin + board_size + square_size, square_size)
+    app.insert_text(f'Custom board', MARGIN + BOARD_SIZE + SQUARE_SIZE, SQUARE_SIZE)
 
 
 def solve_board(app):
@@ -56,10 +56,10 @@ def solve_board(app):
     for p in range(9):
         for q in range(9):
             n = app.entries[9 * p + q].get()
-            sudokuSolver.board[p][q] = int(n) if n != '' else 0
-    sudokuSolver.board_start = [row[:] for row in sudokuSolver.board]
-    sudokuSolver.solver()
-    return not any([sudokuSolver.board[i][j] == 0 for i in range(9) for j in range(9)])
+            sudoku_solver.board[p][q] = int(n) if n != '' else 0
+    sudoku_solver.board_start = [row[:] for row in sudoku_solver.board]
+    sudoku_solver.solver()
+    return not any([sudoku_solver.board[i][j] == 0 for i in range(9) for j in range(9)])
 
 
 def show_answers(app):
@@ -69,25 +69,22 @@ def show_answers(app):
         return
     for p in range(9):
         for q in range(9):
-            if (p, q) in sudokuLists.empty_start:
+            if (p, q) in sudoku_lists.empty_start:
                 app.entries[9 * p + q].config(state='normal', fg='#209138')
-                app.entries[9 * p + q].insert(0, sudokuSolver.board[p][q])
+                app.entries[9 * p + q].insert(0, sudoku_solver.board[p][q])
             else:
                 app.entries[9 * p + q].config(state='readonly', fg='#3C0238')
 
 
 def button_click(app, p, q):
     board_number = q + 1 if p == 0 else q + 6
-    # for i in range(81):
-    #     app.entries[i].config(state='normal')
-    # app.entries = []
-    sudokuSolver.clear_b()
+    sudoku_solver.clear_b()
     app.canvas.delete('txt')
-    app.insert_text(f'Sudoku board #{board_number}', margin + board_size + square_size, square_size)
+    app.insert_text(f'Sudoku board #{board_number}', MARGIN + BOARD_SIZE + SQUARE_SIZE, SQUARE_SIZE)
     try:
         with open('boards/b' + str(board_number) + '.dat', 'r') as file:
-            sudokuSolver.board = [[int(x) for x in line.split(' ')] for line in file]
-        sudokuSolver.board_start = [row[:] for row in sudokuSolver.board]
+            sudoku_solver.board = [[int(x) for x in line.split(' ')] for line in file]
+        sudoku_solver.board_start = [row[:] for row in sudoku_solver.board]
         file.close()
     except IOError:
         print("Couldn't open the file\n")
@@ -96,8 +93,8 @@ def button_click(app, p, q):
         for q in range(9):
             app.entries[9 * p + q].config(state='normal', fg='#3C0238')
             app.entries[9 * p + q].delete(0, tk.END)
-            if sudokuSolver.board_start[p][q] != 0:
-                app.entries[9 * p + q].insert(0, sudokuSolver.board[p][q])
+            if sudoku_solver.board_start[p][q] != 0:
+                app.entries[9 * p + q].insert(0, sudoku_solver.board[p][q])
                 app.entries[9 * p + q].config(state='readonly')
     print(f'\nBoard #{board_number} loaded!')
 
@@ -112,8 +109,7 @@ def validate(k):
             assert digit != 0, 'invalid number 0'
             if 1 <= digit <= 9:
                 return True
-        except (ValueError, AssertionError):  # as e:
-            # print(f'Invalid entry: {e}')
+        except (ValueError, AssertionError):
             return False
     else:
         return False
@@ -133,18 +129,18 @@ class App(tk.Frame):
         return self.canvas
 
     def draw_grid(self):
-        board = sudokuSolver.board
+        board = sudoku_solver.board
         if len(board) == 0 or board is None:
             print('Failed to load the board!\n')
             return
-        for a, row in enumerate(range(0 + margin, board_size + margin, square_size)):
-            for b, col in enumerate(range(0 + margin, board_size + margin, square_size)):
-                bgcolor = '#BFBFBF' if sudokuLists.box_position[(a, b)] % 2 == 0 else '#A0A0A0'
+        for a, row in enumerate(range(0 + MARGIN, BOARD_SIZE + MARGIN, SQUARE_SIZE)):
+            for b, col in enumerate(range(0 + MARGIN, BOARD_SIZE + MARGIN, SQUARE_SIZE)):
+                bgcolor = '#BFBFBF' if sudoku_lists.box_position[(a, b)] % 2 == 0 else '#A0A0A0'
                 fgcolor = '#3C0238'
                 vcmd = (self.canvas.register(validate), '%P')
                 entry = tk.Entry(self.canvas, justify='center', bg=bgcolor, fg=fgcolor, font='Verdana 15',
                                  readonlybackground=bgcolor, validate='key', validatecommand=vcmd)
-                entry.place(x=col, y=row, width=square_size, height=square_size)  # <<<<<<<<<<
+                entry.place(x=col, y=row, width=SQUARE_SIZE, height=SQUARE_SIZE)  # <<<<<<<<<<
                 self.entries.append(entry)
 
     def insert_text(self, text, pos_x, pos_y):
@@ -158,19 +154,19 @@ class App(tk.Frame):
         elif btn == 2:
             button.config(command=lambda: show_answers(self))
             Hovertip(button, 'Solve the current board')
-        button.place(x=board_size + 1.3 * square_size + posx, y=3.7 * square_size + posy)
+        button.place(x=BOARD_SIZE + 1.3 * SQUARE_SIZE + posx, y=3.7 * SQUARE_SIZE + posy)
 
     def clear_board(self, text, posx=0, posy=0, width=11, height=1):
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width,
                            command=lambda: clear_entries(self))
         Hovertip(button, 'Clear all entries')
-        button.place(x=board_size + 1.3 * square_size + posx, y=5 * square_size + posy)
+        button.place(x=BOARD_SIZE + 1.3 * SQUARE_SIZE + posx, y=5 * SQUARE_SIZE + posy)
 
     def board_edit(self, text, posx=0, posy=0, width=11, height=1):
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width,
                            command=lambda: edit_board(self))
         Hovertip(button, 'Make all cells editable')
-        button.place(x=board_size + 3.6 * square_size + posx, y=5 * square_size + posy)
+        button.place(x=BOARD_SIZE + 3.6 * SQUARE_SIZE + posx, y=5 * SQUARE_SIZE + posy)
 
     def board_buttons(self, text, width=6, height=1):
         btn = []
@@ -179,15 +175,15 @@ class App(tk.Frame):
                 btn.append(tk.Button(self.canvas, text=f'{text} {q + 1 if p == 0 else q + 6}',
                                      command=lambda m=p, n=q: button_click(self, m, n),
                                      height=height, width=width))
-                btn[q if p == 0 else q + 5].place(x=board_size + 1.3 * square_size * (q + 1),
-                                                  y=1.3 * square_size * (p + 1))
+                btn[q if p == 0 else q + 5].place(x=BOARD_SIZE + 1.3 * SQUARE_SIZE * (q + 1),
+                                                  y=1.3 * SQUARE_SIZE * (p + 1))
 
     def info_button(self, text='Info', width=32, height=32):
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width,
                            command=lambda: info(), image=self.info)
-        button.place(x=w-80, y=h-40)
+        button.place(x=W-80, y=H-40)
 
     def github_button(self):
         button = tk.Button(self.canvas, image=self.img, command=open_url)
         Hovertip(button, 'Go to GitHub repository')
-        button.place(x=w-40, y=h-40)
+        button.place(x=W-40, y=H-40)
