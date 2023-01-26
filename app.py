@@ -9,7 +9,7 @@ from idlelib.tooltip import Hovertip
 
 def open_url():
     print(f'Opening github repository...')
-    webbrowser.open_new_tab('https://github.com/xbandrade/sudokuSolver')
+    webbrowser.open_new_tab('https://github.com/xbandrade/sudoku-solver')
 
 
 def info():
@@ -120,6 +120,7 @@ class App(tk.Frame):
         super().__init__(master)
         self.master = master
         self.canvas = canvas
+        self.selected_board = None
         self.entries = []
         self.img = tk.PhotoImage(file='img/github.png')
         self.info = tk.PhotoImage(file='img/info.png')
@@ -142,6 +143,10 @@ class App(tk.Frame):
                                  readonlybackground=bgcolor, validate='key', validatecommand=vcmd)
                 entry.place(x=col, y=row, width=SQUARE_SIZE, height=SQUARE_SIZE)  # <<<<<<<<<<
                 self.entries.append(entry)
+
+    def dropdown_board(self, selection):
+        self.selected_board = selection
+        print(selection)
 
     def insert_text(self, text, pos_x, pos_y):
         self.canvas.create_text(pos_x + 3 * pos_y, pos_y * 0.8, text=text, font='Verdana 13', tag='txt')
@@ -168,15 +173,24 @@ class App(tk.Frame):
         Hovertip(button, 'Make all cells editable')
         button.place(x=BOARD_SIZE + 3.6 * SQUARE_SIZE + posx, y=5 * SQUARE_SIZE + posy)
 
+    # def board_buttons(self, text, width=6, height=1):
+    #     btn = []
+    #     for p in range(2):
+    #         for q in range(5):
+    #             btn.append(tk.Button(self.canvas, text=f'{text} {q + 1 if p == 0 else q + 6}',
+    #                                  command=lambda m=p, n=q: button_click(self, m, n),
+    #                                  height=height, width=width))
+    #             btn[q if p == 0 else q + 5].place(x=BOARD_SIZE + 1.3 * SQUARE_SIZE * (q + 1),
+    #                                               y=1.3 * SQUARE_SIZE * (p + 1))
+
     def board_buttons(self, text, width=6, height=1):
-        btn = []
-        for p in range(2):
-            for q in range(5):
-                btn.append(tk.Button(self.canvas, text=f'{text} {q + 1 if p == 0 else q + 6}',
-                                     command=lambda m=p, n=q: button_click(self, m, n),
-                                     height=height, width=width))
-                btn[q if p == 0 else q + 5].place(x=BOARD_SIZE + 1.3 * SQUARE_SIZE * (q + 1),
-                                                  y=1.3 * SQUARE_SIZE * (p + 1))
+        board_list = [f'{text} {x}' for x in range(1, 11)]
+        value_inside = tk.StringVar(self.canvas)
+        value_inside.set('Custom')
+        question_menu = tk.OptionMenu(self.canvas, value_inside, *board_list, command=self.dropdown_board)
+        question_menu.place(x=BOARD_SIZE + 1.3 * SQUARE_SIZE, y=1.3 * SQUARE_SIZE)
+        load_button = tk.Button(self.canvas, text='Load Board', command=len)
+        load_button.place(x=BOARD_SIZE + 4.0 * SQUARE_SIZE, y=1.4 * SQUARE_SIZE)
 
     def info_button(self, text='Info', width=32, height=32):
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width,

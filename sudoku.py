@@ -7,13 +7,14 @@ from config import *
 
 def main():
     root = tix.Tk()
+    root.iconbitmap("img/sdk.ico")
     root.tk.eval(f'tk::PlaceWindow . center')
     sudoku_solver.clear_b()
     root.geometry(f'{str(W)}x{str(H)}')
-    root.title('Sudoku')
+    root.title('Sudoku Solver')
     root.resizable(False, False)
     app = App(root)
-    canvas = app.create_canvas(W, H, '#8895AF')
+    canvas = app.create_canvas(W, H, '#8585d6')
     app.draw_grid()
     app.insert_text(f'Custom board', MARGIN+BOARD_SIZE+SQUARE_SIZE, SQUARE_SIZE)
     app.board_buttons('Board')  # TODO: make this a dropdown list
@@ -30,5 +31,5 @@ def main():
 
 if __name__ == '__main__':
     print('~~~~~~~~Sudoku Solver~~~~~~~~')
-    print('https://github.com/xbandrade/sudokuSolver')
+    print('https://github.com/xbandrade/sudoku-solver')
     main()
