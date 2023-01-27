@@ -42,6 +42,20 @@ def update_board(step):
         sudoku_lists.empty_start = empty_pos[:]
 
 
+def positions_list(list_type, pos):
+    if list_type == 'r' and isinstance(pos, int) and 0 <= pos < 9:
+        return [(pos, k) for k in range(9)]
+    elif list_type == 'c' and isinstance(pos, int) and 0 <= pos < 9:
+        return [(k, pos) for k in range(9)]
+    elif list_type == 'b' and isinstance(pos, tuple) and 0 <= pos[0] < 9 and 0 <= pos[1] < 9:
+        box_num = pos[0] // 3 * 3 + pos[1] // 3
+        bx, by = box_num // 3 * 3, box_num % 3 * 3
+        return [(bx + i, by + j) for i in range(3) for j in range(3)]
+    else:
+        print('Invalid list_type or position argument')
+        return []
+
+
 def transpose():
     board_t = [[board[y][x] for y in range(9)] for x in range(9)]
     return board_t
@@ -89,7 +103,6 @@ def pop_solved(solved_cells):
 
 def update_candidates(solved_pos, digit):
     """Updates candidates in row, column and box of the solved cell."""
-    
     for r in row_list[solved_pos[0]]:
         if r in candidates and digit in candidates[r]:
             candidates[r].remove(digit)
@@ -477,9 +490,15 @@ def solver():
         if digits_left() == empty_cells:  # no new filled cells, avoids infinite loop
             double_check += 1
             if double_check == 2:
+                filled_cells = 81 - empty_cells
                 if backtracking():  # try to solve the problem by backtracking
                     solved = check_solved()
                     print('\nSolved by backtracking!')
+                    if filled_cells >= 17:
+                        t = '' 
+                    else:
+                        t = 'Solved by backtracking!\nProblem may have more than one solution.'
+                    return (board, t)
                 empty_cells = -1
         else:
             double_check = 0

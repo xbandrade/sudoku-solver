@@ -86,8 +86,6 @@ class App(tk.Frame):
                 n = self.entries[9 * p + q].get()
                 sudoku_solver.board[p][q] = int(n) if n != '' else 0
         sudoku_solver.board_start = [row[:] for row in sudoku_solver.board]
-        # is_valid, msg = sudoku_solver.solver()
-        # return not any([sudoku_solver.board[i][j] == 0 for i in range(9) for j in range(9)])
         return sudoku_solver.solver()
 
     def show_answers_cmd(self):
@@ -95,6 +93,8 @@ class App(tk.Frame):
         if not board_solved:
             messagebox.showinfo(title='Error', message=msg, icon='error')
             return
+        elif msg:
+            messagebox.showinfo(title='Backtracking', message=msg, icon='warning')
         print(f'Showing answers...\n')
         for p in range(9):
             for q in range(9):
@@ -134,6 +134,7 @@ class App(tk.Frame):
             self.entries[p].delete(0, tk.END)
         self.board_text(f'Custom board')
         self.value_inside.set('Custom')
+        self.selected_board = None
 
     def clear_board(self, text, width=11, height=1):
         pos_x, pos_y =  H + (W - H) // 6, CELL_SIZE * 4
@@ -146,6 +147,8 @@ class App(tk.Frame):
         print(f'Making board fixed numbers editable...\n')
         for p in range(81):
             self.entries[p].config(state='normal', fg='#3C0238')
+        self.canvas.delete('txt')
+        self.board_text(f'Custom board')
         messagebox.showinfo(title='Success', message='All cells are now editable!')
 
     def edit_board(self, text, width=11, height=1):
@@ -156,6 +159,9 @@ class App(tk.Frame):
         button.place(x=pos_x, y=pos_y)
 
     def button_click(self):
+        if not self.selected_board:
+            messagebox.showinfo(title='Warning', message='Select a board from the list', icon='warning')
+            return
         board_number = int(self.selected_board[-2:])
         sudoku_solver.restart()
         self.canvas.delete('txt')
