@@ -429,6 +429,29 @@ def y_wing():
                 continue  # breaks pivot loop
 
 
+def is_valid(i, j, num):
+    for k in range(9):
+        if (board[i][k] == num or board[k][j] == num or 
+            board[i // 3 * 3 + k // 3][j // 3 * 3 + k % 3] == num):
+            return False
+    return True
+
+
+def backtracking():
+    for i in range(9):
+        for j in range(9):
+            if board[i][j] == 0:
+                for num in range(1, 10):
+                    if is_valid(i, j, num):
+                        board[i][j] = num
+                        if backtracking():
+                            return True
+                        else:
+                            board[i][j] = 0
+                return False
+    return True
+
+
 def solver():
     global candidates, solved
     is_valid = valid_board()
@@ -454,6 +477,9 @@ def solver():
         if digits_left() == empty_cells:  # no new filled cells, avoids infinite loop
             double_check += 1
             if double_check == 2:
+                if backtracking():  # try to solve the problem by backtracking
+                    solved = check_solved()
+                    print('\nSolved by backtracking!')
                 empty_cells = -1
         else:
             double_check = 0
