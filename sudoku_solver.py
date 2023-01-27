@@ -5,13 +5,13 @@ from itertools import combinations
 board = []
 board_start = []
 
-l9 = list(range(1, 10))  # 1-9 list
+l9 = list(range(1, 10))
 empty_pos = []  # list of current empty positions
 candidates = {}  # Possible numbers for each empty cell
 solved = False
 
 
-def clear_b():
+def restart():
     global board, board_start
     board = [[0 for _ in range(9)] for _ in range(9)]
     board_start = [[0 for _ in range(9)] for _ in range(9)]
@@ -23,9 +23,10 @@ def digits_left():
 
 
 def check_solved():
-    """Returns True if there are no empty cells and if all rows, cols and boxes are valid."""
+    """Returns True if there are no empty cells and all rows, cols and boxes are valid."""
     s = all([board[i][j] != 0 for i in range(9) for j in range(9)])
-    return s and check_rows() and check_cols() and check_boxes()
+    # return s and check_rows() and check_cols() and check_boxes()
+    return s and valid_board()
 
 
 def update_board(step):
@@ -47,42 +48,24 @@ def transpose():
 
 
 def boxes_list():
-    board_s = [[board[x][y] for x in range(i, i + 3) for y in range(j, j + 3)] for i in range(0, 9, 3)
-               for j in range(0, 9, 3)]
+    board_s = [[board[x][y] for x in range(i, i + 3) for y in range(j, j + 3)]
+                for i in range(0, 9, 3) for j in range(0, 9, 3)]
     return board_s
 
 
-def check_rows():
-    """Runs through rows and returns True if all rows are valid."""
-    invalid_rows = []
-    for k, lines in enumerate(board):
-        line = [n for n in lines if n != 0]
-        if len(line) != len(set(line)):
-            invalid_rows.append(k)
-    return len(invalid_rows) == 0
-
-
-def check_cols():
-    """Runs through columns and returns True if all columns are valid."""
-    invalid_cols = []
-    board_t = transpose()
-    for k, lines in enumerate(board_t):
-        line = [n for n in lines if n != 0]
-        if len(line) != len(set(line)):
-            invalid_cols.append(k)
-    return len(invalid_cols) == 0
-
-
-def check_boxes():
-    """Runs through boxes and returns True if all boxes are valid."""
-    invalid_boxes = []
-    board_b = boxes_list()
-    for k, lines in enumerate(board_b):
-        line = [n for n in lines if n != 0]
-        if len(line) != len(set(line)):
-            invalid_boxes.append(k)
-            # print(f'box {k} is not valid!')
-    return len(invalid_boxes) == 0
+def valid_board():
+    seen = set()
+    for i in range(9):
+        for j in range(9):
+            if board[i][j]:
+                r = (board[i][j], 'row', i)
+                c = (board[i][j], 'col', j)
+                b = (board[i][j], 'box', box_position[(i, j)])
+                if r in seen or c in seen or b in seen:
+                    print(f'Invalid cell at ({i}, {j}): {board[i][j]}')
+                    return (False, f'Invalid cell -> ({i}, {j}): {board[i][j]}')
+                seen.update((r, c, b))
+    return (True, '')
 
 
 def check_board(x, y):
@@ -445,6 +428,9 @@ def y_wing():
 
 def solver():
     global candidates, solved
+    is_valid = valid_board()
+    if board and not is_valid[0]:
+        return (None, is_valid[1])
     candidates = {}
     solved = False
     k = 1
@@ -454,8 +440,8 @@ def solver():
         update_board(k)
         naked_single()
         hidden_single()
-        for i1 in [2, 3, 4]:  # naked pairs, triples and quads
-            naked_subsets(i1)
+        for i in [2, 3, 4]:  # naked pairs, triples and quads
+            naked_subsets(i)
         locked_candidates()
         x_wing()
         y_wing()
@@ -470,8 +456,8 @@ def solver():
             double_check = 0
             empty_cells = digits_left()
     if solved:
-        print(f'\nProblem solved!')
-        return board
+        print(f'\nProblem solved!\n')
+        return (board, '')
     else:
         print(f'\nFailed to solve the problem!\n')
-        return None
+        return (None, f'Failed to solve the problem!')
