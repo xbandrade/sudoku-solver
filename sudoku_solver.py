@@ -60,10 +60,10 @@ def valid_board():
             if board[i][j]:
                 r = (board[i][j], 'row', i)
                 c = (board[i][j], 'col', j)
-                b = (board[i][j], 'box', box_position[(i, j)])
+                b = (board[i][j], 'box', i // 3 * 3 + j // 3)
                 if r in seen or c in seen or b in seen:
-                    print(f'Invalid cell at ({i}, {j}): {board[i][j]}')
-                    return (False, f'Invalid cell -> ({i}, {j}): {board[i][j]}')
+                    print(f'Invalid cell --- ({i}, {j}): {board[i][j]}')
+                    return (False, f'Invalid cell --- ({i}, {j}): {board[i][j]}')
                 seen.update((r, c, b))
     return (True, '')
 
@@ -72,7 +72,7 @@ def check_board(x, y):
     """Checks all candidates in position (x, y)"""
     board_t = transpose()
     board_b = boxes_list()
-    q = box_position[(x, y)]
+    q = x // 3 * 3 + y // 3
     candidates_row = [n for n in l9 if n not in board[x]]  # all numbers missing in the row
     candidates_col = [n for n in l9 if n not in board_t[y]]  # all numbers missing in the column
     candidates_box = [n for n in l9 if n not in board_b[q]]  # all numbers missing in the box
@@ -89,13 +89,14 @@ def pop_solved(solved_cells):
 
 def update_candidates(solved_pos, digit):
     """Updates candidates in row, column and box of the solved cell."""
+    
     for r in row_list[solved_pos[0]]:
         if r in candidates and digit in candidates[r]:
             candidates[r].remove(digit)
     for c in col_list[solved_pos[1]]:
         if c in candidates and digit in candidates[c]:
             candidates[c].remove(digit)
-    for b in box_list[box_position[solved_pos]]:
+    for b in box_list[solved_pos[0] // 3 * 3 + solved_pos[1] // 3]:
         if b in candidates and digit in candidates[b]:
             candidates[b].remove(digit)
 
@@ -115,9 +116,9 @@ def hidden_single():
     """Checks if a number is a candidate for a single cell in a row, column or box."""
     solved_cells = []
     for row in row_list:
-        candidate_positions = dict()
+        candidate_positions = {}
         for i in range(1, 10):
-            candidate_positions[str(i)] = list()  # (candidate): [positions]
+            candidate_positions[str(i)] = []  # (candidate): [positions]
         for pos in row:
             if pos in candidates:  # if cell is empty
                 for i in candidates[pos]:
@@ -128,9 +129,9 @@ def hidden_single():
                 solved_cells.append((candidate_positions[digit][0][0], candidate_positions[digit][0][1]))
                 update_candidates(candidate_positions[digit][0], int(digit))
     for col in col_list:
-        candidate_positions = dict()
+        candidate_positions = {}
         for i in range(1, 10):
-            candidate_positions[str(i)] = list()
+            candidate_positions[str(i)] = []
         for pos in col:
             if pos in candidates:  # if cell is empty
                 for i in candidates[pos]:
@@ -141,9 +142,9 @@ def hidden_single():
                 solved_cells.append((candidate_positions[digit][0][0], candidate_positions[digit][0][1]))
                 update_candidates(candidate_positions[digit][0], int(digit))
     for box in box_list:
-        candidate_positions = dict()
+        candidate_positions = {}
         for i in range(1, 10):
-            candidate_positions[str(i)] = list()
+            candidate_positions[str(i)] = []
         for pos in box:
             if pos in candidates:  # if cell is empty
                 for i in candidates[pos]:
@@ -198,7 +199,7 @@ def locked_candidates():
             if 2 <= len(candidates_position[digit]) <= 3:
                 l1 = list()
                 for position in candidates_position[digit]:
-                    l1.append(box_position[position])
+                    l1.append(position[0] // 3 * 3 + position[1] // 3)
                 if len(set(l1)) == 1:  # if all positions of number d are in the same box
                     for b in box_list[l1[0]]:  # runs through positions in that box and deletes number d
                         if b in candidates and int(digit) in candidates[b] and b not in candidates_position[digit]:
@@ -216,7 +217,7 @@ def locked_candidates():
             if 2 <= len(candidates_position[digit]) <= 3:
                 l1 = list()
                 for position in candidates_position[digit]:
-                    l1.append(box_position[position])
+                    l1.append(position[0] // 3 * 3 + position[1] // 3)
                 if len(set(l1)) == 1:
                     for b in box_list[l1[0]]:
                         if b in candidates and int(digit) in candidates[b] and b not in candidates_position[digit]:
@@ -347,15 +348,17 @@ def y_wing():
         rows = []
         cols = []
         boxes = []
-        for r in [pos for pos in row_list[item[0]] if pos in candidates and box_position[item] != box_position[pos]]:
+        for r in [pos for pos in row_list[item[0]] if pos in candidates and 
+                  item[0] // 3 * 3 + item[1] // 3 != pos[0] // 3 * 3 + pos[1] // 3]:
             if len(candidates[r]) == 2 and not all([item[k] == r[k] for k in range(2)]):
                 if sum(i in candidates[r] for i in candidates[item]) == 1:
                     rows.append(r)
-        for c in [pos for pos in col_list[item[1]] if pos in candidates and box_position[item] != box_position[pos]]:
+        for c in [pos for pos in col_list[item[1]] if pos in candidates and 
+                  item[0] // 3 * 3 + item[1] // 3 != pos[0] // 3 * 3 + pos[1] // 3]:
             if len(candidates[c]) == 2 and not all([item[k] == c[k] for k in range(2)]):
                 if sum(i in candidates[c] for i in candidates[item]) == 1:
                     cols.append(c)
-        for b in [pos for pos in box_list[box_position[item]] if pos in candidates]:
+        for b in [pos for pos in box_list[item[0] // 3 * 3 + item[1] // 3] if pos in candidates]:
             if len(candidates[b]) == 2 and not all([item[k] == b[k] for k in range(2)]):
                 if sum(i in candidates[b] for i in candidates[item]) == 1:
                     boxes.append(b)
@@ -380,10 +383,10 @@ def y_wing():
                         if all(digit in candidates[b] for digit in third_square) and r[0] != b[0]:
                             # Found a Y-wing: pivot = item, pincer 1 = r, pincer 2 = b
                             # Six different squares seen by both pincers
-                            for p in [q for q in box_list[box_position[b]] if q in row_list[r[0]]]:
+                            for p in [q for q in box_list[b[0] // 3 * 3 + b[1] // 3] if q in row_list[r[0]]]:
                                 if p in candidates and n in candidates[p]:
                                     candidates[p].remove(n)
-                            for p in [q for q in box_list[box_position[r]] if q in row_list[b[0]]]:
+                            for p in [q for q in box_list[r[0] // 3 * 3 + r[1] // 3] if q in row_list[b[0]]]:
                                 if p in candidates and n in candidates[p]:
                                     candidates[p].remove(n)
                             found_wing = True
@@ -412,10 +415,10 @@ def y_wing():
                         if all(digit in candidates[b] for digit in third_square) and c[1] != b[1]:
                             # Found a Y-wing: pivot = item, pincer 1 = c, pincer 2 = b
                             # Six different squares seen by both pincers
-                            for p in [q for q in box_list[box_position[b]] if q in col_list[c[1]]]:
+                            for p in [q for q in box_list[b[0] // 3 * 3 + b[1] // 3] if q in col_list[c[1]]]:
                                 if p in candidates and n in candidates[p]:  # pivot does not contain n
                                     candidates[p].remove(n)
-                            for p in [q for q in box_list[box_position[c]] if q in col_list[b[1]]]:
+                            for p in [q for q in box_list[c[0] // 3 * 3 + c[1] // 3] if q in col_list[b[1]]]:
                                 if p in candidates and n in candidates[p]:
                                     candidates[p].remove(n)
                             found_wing = True
@@ -455,7 +458,7 @@ def solver():
         else:
             double_check = 0
             empty_cells = digits_left()
-    if solved:
+    if solved or empty_cells == 0:
         print(f'\nProblem solved!\n')
         return (board, '')
     else:

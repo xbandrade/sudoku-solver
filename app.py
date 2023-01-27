@@ -64,7 +64,7 @@ class App(tk.Frame):
             return
         for a, row in enumerate(range(MARGIN, BOARD_SIZE + MARGIN, CELL_SIZE)):
             for b, col in enumerate(range(MARGIN, BOARD_SIZE + MARGIN, CELL_SIZE)):
-                bgcolor = '#BFBFBF' if sudoku_lists.box_position[(a, b)] % 2 == 0 else '#A0A0A0'
+                bgcolor = '#BFBFBF' if (a // 3 * 3 + b // 3) % 2 == 0 else '#A0A0A0'
                 fgcolor = '#3C0238'
                 vcmd = (self.canvas.register(validate), '%P')
                 entry = tk.Entry(self.canvas, justify='center', bg=bgcolor, fg=fgcolor, font='Verdana 15',
@@ -164,7 +164,6 @@ class App(tk.Frame):
             with open('boards/b' + str(board_number) + '.dat', 'r') as file:
                 sudoku_solver.board = [[int(x) for x in line.split(' ')] for line in file]
             sudoku_solver.board_start = [row[:] for row in sudoku_solver.board]
-            file.close()
         except IOError:
             print("Couldn't open the file\n")
             exit(1)
