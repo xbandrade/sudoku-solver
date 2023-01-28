@@ -1,9 +1,10 @@
+import numpy as np
 import sudoku_lists
 from sudoku_lists import *
 from itertools import combinations
 
-board = []
-board_start = []
+board = np.array([])
+board_start = np.array([])
 
 l9 = list(range(1, 10))
 empty_pos = []  # list of current empty positions
@@ -13,20 +14,18 @@ solved = False
 
 def restart():
     global board, board_start
-    board = [[0 for _ in range(9)] for _ in range(9)]
-    board_start = [[0 for _ in range(9)] for _ in range(9)]
+    board = np.array([[0 for _ in range(9)] for _ in range(9)])
+    board_start = np.copy(board)
     sudoku_lists.empty_start = []
 
 
 def digits_left():
-    return sum(board[i][j] == 0 for i in range(9) for j in range(9))
+    return 81 - np.count_nonzero(board)
 
 
 def check_solved():
     """Returns True if there are no empty cells and all rows, cols and boxes are valid."""
-    s = all([board[i][j] != 0 for i in range(9) for j in range(9)])
-    # return s and check_rows() and check_cols() and check_boxes()
-    return s and valid_board()
+    return not digits_left() and valid_board()
 
 
 def update_board(step):
@@ -34,7 +33,7 @@ def update_board(step):
     empty_pos = []  # show digit in green if cell is filled in this step
     for i in range(9):
         for j in range(9):
-            if board[i][j] == 0:
+            if board[i, j] == 0:
                 empty_pos.append((i, j))
                 if step == 1:  # starts dictionary with (cell position): [candidate numbers]
                     candidates[(i, j)] = check_board(i, j)
@@ -57,12 +56,12 @@ def positions_list(list_type, pos):
 
 
 def transpose():
-    board_t = [[board[y][x] for y in range(9)] for x in range(9)]
+    board_t = [[board[y, x] for y in range(9)] for x in range(9)]
     return board_t
 
 
 def boxes_list():
-    board_s = [[board[x][y] for x in range(i, i + 3) for y in range(j, j + 3)]
+    board_s = [[board[x, y] for x in range(i, i + 3) for y in range(j, j + 3)]
                 for i in range(0, 9, 3) for j in range(0, 9, 3)]
     return board_s
 
@@ -71,13 +70,13 @@ def valid_board():
     seen = set()
     for i in range(9):
         for j in range(9):
-            if board[i][j]:
-                r = (board[i][j], 'row', i)
-                c = (board[i][j], 'col', j)
-                b = (board[i][j], 'box', i // 3 * 3 + j // 3)
+            if board[i, j]:
+                r = (board[i, j], 'row', i)
+                c = (board[i, j], 'col', j)
+                b = (board[i, j], 'box', i // 3 * 3 + j // 3)
                 if r in seen or c in seen or b in seen:
-                    print(f'Invalid cell --- ({i}, {j}): {board[i][j]}')
-                    return (False, f'Invalid cell --- ({i}, {j}): {board[i][j]}')
+                    print(f'Invalid cell --- ({i}, {j}): {board[i, j]}')
+                    return (False, f'Invalid cell --- ({i}, {j}): {board[i, j]}')
                 seen.update((r, c, b))
     return (True, '')
 
@@ -119,7 +118,7 @@ def naked_single():
     solved_cells = []
     for pos in candidates:
         if len(candidates[pos]) == 1:
-            board[pos[0]][pos[1]] = candidates[pos][0]
+            board[pos[0], pos[1]] = candidates[pos][0]
             solved_cells.append((pos[0], pos[1]))
             update_candidates(pos, candidates[pos][0])
     pop_solved(solved_cells)  # pops solved cells from dictionary
@@ -138,7 +137,7 @@ def hidden_single():
                     candidate_positions[str(i)].append(pos)
         for digit in candidate_positions:
             if len(candidate_positions[digit]) == 1:
-                board[candidate_positions[digit][0][0]][candidate_positions[digit][0][1]] = int(digit)
+                board[candidate_positions[digit][0][0], candidate_positions[digit][0][1]] = int(digit)
                 solved_cells.append((candidate_positions[digit][0][0], candidate_positions[digit][0][1]))
                 update_candidates(candidate_positions[digit][0], int(digit))
     for col in col_list:
@@ -151,7 +150,7 @@ def hidden_single():
                     candidate_positions[str(i)].append(pos)
         for digit in candidate_positions:
             if len(candidate_positions[digit]) == 1:
-                board[candidate_positions[digit][0][0]][candidate_positions[digit][0][1]] = int(digit)
+                board[candidate_positions[digit][0][0], candidate_positions[digit][0][1]] = int(digit)
                 solved_cells.append((candidate_positions[digit][0][0], candidate_positions[digit][0][1]))
                 update_candidates(candidate_positions[digit][0], int(digit))
     for box in box_list:
@@ -164,7 +163,7 @@ def hidden_single():
                     candidate_positions[str(i)].append(pos)
         for digit in candidate_positions:
             if len(candidate_positions[digit]) == 1:
-                board[candidate_positions[digit][0][0]][candidate_positions[digit][0][1]] = int(digit)
+                board[candidate_positions[digit][0][0], candidate_positions[digit][0][1]] = int(digit)
                 solved_cells.append((candidate_positions[digit][0][0], candidate_positions[digit][0][1]))
                 update_candidates(candidate_positions[digit][0], int(digit))
     pop_solved(solved_cells)
@@ -444,23 +443,23 @@ def y_wing():
 
 def is_valid(i, j, num):
     for k in range(9):
-        if (board[i][k] == num or board[k][j] == num or 
-            board[i // 3 * 3 + k // 3][j // 3 * 3 + k % 3] == num):
+        if (board[i, k] == num or board[k, j] == num or 
+            board[i // 3 * 3 + k // 3, j // 3 * 3 + k % 3] == num):
             return False
     return True
 
 
-def backtracking():
+def backtracking():  # <<< Change this for DLX
     for i in range(9):
         for j in range(9):
-            if board[i][j] == 0:
+            if board[i, j] == 0:
                 for num in range(1, 10):
                     if is_valid(i, j, num):
-                        board[i][j] = num
+                        board[i, j] = num
                         if backtracking():
                             return True
                         else:
-                            board[i][j] = 0
+                            board[i, j] = 0
                 return False
     return True
 
@@ -468,8 +467,8 @@ def backtracking():
 def solver():
     global candidates, solved
     is_valid = valid_board()
-    if board and not is_valid[0]:
-        return (None, is_valid[1])
+    if board.size and not is_valid[0]:
+        return (np.array([]), is_valid[1])
     candidates = {}
     solved = False
     k = 1
@@ -508,4 +507,4 @@ def solver():
         return (board, '')
     else:
         print(f'\nFailed to solve the problem!\n')
-        return (None, f'Failed to solve the problem!')
+        return (np.array([]), f'Failed to solve the problem!')

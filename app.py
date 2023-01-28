@@ -1,7 +1,8 @@
 import tkinter as tk
+import numpy as np
+import webbrowser
 import sudoku_solver
 import sudoku_lists
-import webbrowser
 from tkinter import messagebox
 from config import *
 from idlelib.tooltip import Hovertip
@@ -59,7 +60,7 @@ class App(tk.Frame):
 
     def create_grid(self):
         board = sudoku_solver.board
-        if not board:
+        if not board.size:
             print('Failed to load the board!\n')
             return
         for a, row in enumerate(range(MARGIN, BOARD_SIZE + MARGIN, CELL_SIZE)):
@@ -84,13 +85,13 @@ class App(tk.Frame):
         for p in range(9):
             for q in range(9):
                 n = self.entries[9 * p + q].get()
-                sudoku_solver.board[p][q] = int(n) if n != '' else 0
-        sudoku_solver.board_start = [row[:] for row in sudoku_solver.board]
+                sudoku_solver.board[p, q] = int(n) if n != '' else 0
+        sudoku_solver.board_start = np.copy(sudoku_solver.board)
         return sudoku_solver.solver()
 
     def show_answers_cmd(self):
         board_solved, msg = self.solve_board()
-        if not board_solved:
+        if not board_solved.size:
             messagebox.showinfo(title='Error', message=msg, icon='error')
             return
         elif msg:
@@ -115,7 +116,7 @@ class App(tk.Frame):
         print(f'Hiding answers...\n')
         for p in range(9):
             for q in range(9):
-                if sudoku_solver.board_start[p][q] == 0:
+                if sudoku_solver.board_start[p, q] == 0:
                     self.entries[9 * p + q].delete(0, tk.END)
 
     def hide_answers(self, text, width=11, height=1):
@@ -158,7 +159,7 @@ class App(tk.Frame):
         Hovertip(button, 'Make all cells editable')
         button.place(x=pos_x, y=pos_y)
 
-    def button_click(self):
+    def load_button_cmd(self):
         if not self.selected_board:
             messagebox.showinfo(title='Warning', message='Select a board from the list', icon='warning')
             return
@@ -167,9 +168,8 @@ class App(tk.Frame):
         self.canvas.delete('txt')
         self.board_text(f'Sudoku board #{board_number}')
         try:
-            with open('boards/b' + str(board_number) + '.dat', 'r') as file:
-                sudoku_solver.board = [[int(x) for x in line.split(' ')] for line in file]
-            sudoku_solver.board_start = [row[:] for row in sudoku_solver.board]
+            sudoku_solver.board = np.loadtxt(f'boards/b{board_number}.dat', dtype=int)
+            sudoku_solver.board_start = np.copy(sudoku_solver.board)
         except IOError:
             print("Couldn't open the file\n")
             exit(1)
@@ -177,8 +177,8 @@ class App(tk.Frame):
             for q in range(9):
                 self.entries[9 * p + q].config(state='normal', fg='#3C0238')
                 self.entries[9 * p + q].delete(0, tk.END)
-                if sudoku_solver.board_start[p][q] != 0:
-                    self.entries[9 * p + q].insert(0, sudoku_solver.board[p][q])
+                if sudoku_solver.board_start[p, q] != 0:
+                    self.entries[9 * p + q].insert(0, sudoku_solver.board[p, q])
                     self.entries[9 * p + q].config(state='readonly')
         print(f'\nBoard #{board_number} loaded!')
 
@@ -188,7 +188,7 @@ class App(tk.Frame):
         self.value_inside.set('Custom')
         dropdown = tk.OptionMenu(self.canvas, self.value_inside, *b_list, command=self.dropdown_selection)
         dropdown.place(x=pos_x1, y=pos_y, anchor='center')
-        load_button = tk.Button(self.canvas, text='Load Board', command=self.button_click)
+        load_button = tk.Button(self.canvas, text='Load Board', command=self.load_button_cmd)
         load_button.place(x=pos_x2, y=pos_y, anchor='center')
         Hovertip(load_button, 'Load the selected board')
 
