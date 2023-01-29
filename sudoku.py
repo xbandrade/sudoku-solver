@@ -22,6 +22,7 @@ def main():
     app.hide_answers('Hide Answers')
     app.clear_board('Clear Board')
     app.edit_board('Edit Board')
+    root.bind('<F3>', app.read_image)
     app.info_button()
     app.github_button()
     app.mainloop()

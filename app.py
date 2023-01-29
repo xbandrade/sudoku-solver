@@ -4,8 +4,10 @@ import webbrowser
 import sudoku_solver
 import sudoku_lists
 from tkinter import messagebox
-from config import *
+from tkinter import filedialog as fd
 from idlelib.tooltip import Hovertip
+from config import *
+from ocr import ocr
 
 
 def open_url():
@@ -75,7 +77,7 @@ class App(tk.Frame):
                 entry.place(x=col, y=row, width=CELL_SIZE, height=CELL_SIZE)
                 self.entries.append(entry)
 
-    def dropdown_selection(self, selection):
+    def _dropdown_selection(self, selection):
         self.selected_board = selection
 
     def board_text(self, text):
@@ -91,7 +93,7 @@ class App(tk.Frame):
         sudoku_solver.board_start = np.copy(sudoku_solver.board)
         return sudoku_solver.solver()
 
-    def show_answers_cmd(self):
+    def _show_answers_cmd(self):
         board_solved, msg = self.solve_board()
         if not board_solved.size:
             messagebox.showinfo(title='Error', message=msg, icon='error')
@@ -110,11 +112,11 @@ class App(tk.Frame):
     def show_answers(self, text, width=11, height=1):
         pos_x, pos_y =  H + (W - H) // 6, CELL_SIZE * 3
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width, anchor='center')
-        button.config(command=self.show_answers_cmd)
+        button.config(command=self._show_answers_cmd)
         Hovertip(button, 'Solve the current board')
         button.place(x=pos_x, y=pos_y)
 
-    def hide_answers_cmd(self):
+    def _hide_answers_cmd(self):
         print(f'Hiding answers...\n')
         for p in range(9):
             for q in range(9):
@@ -124,11 +126,11 @@ class App(tk.Frame):
     def hide_answers(self, text, width=11, height=1):
         pos_x, pos_y =  H + 3 * (W - H) // 6, CELL_SIZE * 3
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width, anchor='center')
-        button.config(command=self.hide_answers_cmd)
+        button.config(command=self._hide_answers_cmd)
         Hovertip(button, 'Hide answers of the current board')
         button.place(x=pos_x, y=pos_y)
 
-    def clear_board_cmd(self):
+    def _clear_board_cmd(self):
         print('Clearing board...\n')
         sudoku_solver.restart()
         self.canvas.delete('txt')
@@ -142,11 +144,11 @@ class App(tk.Frame):
     def clear_board(self, text, width=11, height=1):
         pos_x, pos_y =  H + (W - H) // 6, CELL_SIZE * 4
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width,
-                           command=self.clear_board_cmd)
+                           command=self._clear_board_cmd)
         Hovertip(button, 'Clear all entries')
         button.place(x=pos_x, y=pos_y)
 
-    def edit_board_cmd(self):
+    def _edit_board_cmd(self):
         print(f'Making board fixed numbers editable...\n')
         for p in range(81):
             self.entries[p].config(state='normal', fg='#3C0238')
@@ -157,11 +159,11 @@ class App(tk.Frame):
     def edit_board(self, text, width=11, height=1):
         pos_x, pos_y =  H + 3 * (W - H) // 6, CELL_SIZE * 4
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width,
-                           command=self.edit_board_cmd)
+                           command=self._edit_board_cmd)
         Hovertip(button, 'Make all cells editable')
         button.place(x=pos_x, y=pos_y)
 
-    def load_button_cmd(self):
+    def _load_button_cmd(self):
         if not self.selected_board:
             messagebox.showinfo(title='Warning', message='Select a board from the list', icon='warning')
             return
@@ -188,11 +190,40 @@ class App(tk.Frame):
         pos_x1, pos_x2, pos_y =  H + (W - H) // 3, H + 2 * (W - H) // 3, CELL_SIZE * 1.5
         b_list = [f'{text} {x}' for x in range(1, 11)]
         self.value_inside.set('Custom')
-        dropdown = tk.OptionMenu(self.canvas, self.value_inside, *b_list, command=self.dropdown_selection)
+        dropdown = tk.OptionMenu(self.canvas, self.value_inside, *b_list, command=self._dropdown_selection)
         dropdown.place(x=pos_x1, y=pos_y, anchor='center')
-        load_button = tk.Button(self.canvas, text='Load Board', command=self.load_button_cmd)
+        load_button = tk.Button(self.canvas, text='Load Board', command=self._load_button_cmd)
         load_button.place(x=pos_x2, y=pos_y, anchor='center')
         Hovertip(load_button, 'Load the selected board')
+
+    def _read_image_cmd(self):
+        path = fd.askopenfilename()
+        if not path or path[-4:] not in ('.png', '.jpg', 'jpeg'):
+            messagebox.showinfo(title='Error', message=r'Invalid file type', icon='error')
+            return
+        read_board = ocr(path)
+        if read_board.size:
+            sudoku_solver.board = read_board
+            sudoku_solver.board_start = np.copy(sudoku_solver.board)     
+            for p in range(9):
+                for q in range(9):
+                    self.entries[9 * p + q].config(state='normal', fg='#3C0238')
+                    self.entries[9 * p + q].delete(0, tk.END)
+                    if sudoku_solver.board_start[p, q] != 0:
+                        self.entries[9 * p + q].insert(0, sudoku_solver.board[p, q])
+                        self.entries[9 * p + q].config(state='readonly')
+            print(f'\nImage board loaded!')
+            messagebox.showinfo(title='Success', message='Sudoku board found!')    
+        else:
+            messagebox.showinfo(title='Error', message='Could not find a Sudoku board in the image', 
+                                icon='error')
+    def read_image(self, k, text='Load Image', width=11, height=1):
+        _ = k
+        pos_x, pos_y =  H + (W - H) // 6, CELL_SIZE * 6
+        button = tk.Button(self.canvas, text=f'{text}', height=height, width=width,
+                           command=self._read_image_cmd)
+        Hovertip(button, 'Read a Sudoku problem from image')
+        button.place(x=pos_x, y=pos_y)
 
     def info_button(self, text='Info', width=32, height=32):
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width,
