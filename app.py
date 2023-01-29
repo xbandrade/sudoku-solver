@@ -23,6 +23,8 @@ def info():
             '- Locked candidates',
             '- X-wing',
             '- XY-wing',
+            'If the problem can\'t be solved by these techniques,',
+            'the Dancing Links (DLX) technique will be used.'
             ]
     messagebox.showinfo(title='Info', message='\n'.join(text))
 
@@ -94,16 +96,16 @@ class App(tk.Frame):
         if not board_solved.size:
             messagebox.showinfo(title='Error', message=msg, icon='error')
             return
-        elif msg:
-            messagebox.showinfo(title='Backtracking', message=msg, icon='warning')
         print(f'Showing answers...\n')
         for p in range(9):
             for q in range(9):
                 if (p, q) in sudoku_lists.empty_start:
                     self.entries[9 * p + q].config(state='normal', fg='#209138')
-                    self.entries[9 * p + q].insert(0, sudoku_solver.board[p][q])
+                    self.entries[9 * p + q].insert(0, sudoku_solver.board[p, q])
                 else:
                     self.entries[9 * p + q].config(state='readonly', fg='#3C0238')
+        if msg:
+            messagebox.showinfo(title='Dancing Links', message=msg, icon='warning')
 
     def show_answers(self, text, width=11, height=1):
         pos_x, pos_y =  H + (W - H) // 6, CELL_SIZE * 3

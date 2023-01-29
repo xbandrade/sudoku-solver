@@ -1,6 +1,7 @@
 import numpy as np
 import sudoku_lists
 from sudoku_lists import *
+from dancing_links import dlx
 from itertools import combinations
 
 board = np.array([])
@@ -449,7 +450,7 @@ def is_valid(i, j, num):
     return True
 
 
-def backtracking():  # <<< Change this for DLX
+def backtracking():
     for i in range(9):
         for j in range(9):
             if board[i, j] == 0:
@@ -465,7 +466,7 @@ def backtracking():  # <<< Change this for DLX
 
 
 def solver():
-    global candidates, solved
+    global candidates, solved, board
     is_valid = valid_board()
     if board.size and not is_valid[0]:
         return (np.array([]), is_valid[1])
@@ -490,13 +491,13 @@ def solver():
             double_check += 1
             if double_check == 2:
                 filled_cells = 81 - empty_cells
-                if backtracking():  # try to solve the problem by backtracking
-                    solved = check_solved()
-                    print('\nSolved by backtracking!')
+                solved = dlx(board)
+                if solved:
                     if filled_cells >= 17:
                         t = '' 
                     else:
-                        t = 'Solved by backtracking!\nProblem may have more than one solution.'
+                        t = 'Solved by Dancing Links!\nProblem may have more than one solution.'
+                    print('\nSolved by Dancing Links\n')
                     return (board, t)
                 empty_cells = -1
         else:
