@@ -3,6 +3,7 @@ import sudoku_lists
 from sudoku_lists import *
 from dancing_links import dlx
 from itertools import combinations
+from collections import defaultdict
 
 board = np.array([])
 board_start = np.array([])
@@ -29,16 +30,16 @@ def check_solved():
     return not digits_left() and valid_board()
 
 
-def update_board(step):
+def update_board(k):
     global empty_pos, candidates
     empty_pos = []  # show digit in green if cell is filled in this step
     for i in range(9):
         for j in range(9):
             if board[i, j] == 0:
                 empty_pos.append((i, j))
-                if step == 1:  # starts dictionary with (cell position): [candidate numbers]
+                if k == 1:  # starts dictionary with (cell position): [candidate numbers]
                     candidates[(i, j)] = check_board(i, j)
-    if step == 1:
+    if k == 1:
         sudoku_lists.empty_start = empty_pos[:]
 
 
@@ -76,8 +77,8 @@ def valid_board():
                 c = (board[i, j], 'col', j)
                 b = (board[i, j], 'box', i // 3 * 3 + j // 3)
                 if r in seen or c in seen or b in seen:
-                    print(f'Invalid cell --- ({i}, {j}): {board[i, j]}')
-                    return (False, f'Invalid cell --- ({i}, {j}): {board[i, j]}')
+                    print(f'Invalid cell at ({i}, {j}): {board[i, j]}\n')
+                    return (False, f'Invalid cell [ {board[i, j]} ] at ({i}, {j})')
                 seen.update((r, c, b))
     return (True, '')
 
@@ -114,72 +115,133 @@ def update_candidates(solved_pos, digit):
             candidates[b].remove(digit)
 
 
-def naked_single():
+def naked_single(steps):
     """Checks if there is only one candidate number for an empty cell."""
     solved_cells = []
     for pos in candidates:
         if len(candidates[pos]) == 1:
             board[pos[0], pos[1]] = candidates[pos][0]
+            steps.append(('Naked Single', board[pos[0], pos[1]], pos))
             solved_cells.append((pos[0], pos[1]))
             update_candidates(pos, candidates[pos][0])
     pop_solved(solved_cells)  # pops solved cells from dictionary
 
 
-def hidden_single():
+def hidden_single(steps):
     """Checks if a number is a candidate for a single cell in a row, column or box."""
     solved_cells = []
     for row in row_list:
-        candidate_positions = {}
-        for i in range(1, 10):
-            candidate_positions[str(i)] = []  # (candidate): [positions]
+        candidate_positions = defaultdict(lambda: [])
         for pos in row:
             if pos in candidates:  # if cell is empty
                 for i in candidates[pos]:
-                    candidate_positions[str(i)].append(pos)
+                    candidate_positions[i].append(pos)
         for digit in candidate_positions:
             if len(candidate_positions[digit]) == 1:
-                board[candidate_positions[digit][0][0], candidate_positions[digit][0][1]] = int(digit)
-                solved_cells.append((candidate_positions[digit][0][0], candidate_positions[digit][0][1]))
-                update_candidates(candidate_positions[digit][0], int(digit))
+                p0, p1 = candidate_positions[digit][0][0], candidate_positions[digit][0][1]
+                board[p0, p1] = digit
+                steps.append(('Hidden Single', digit, (p0, p1)))
+                solved_cells.append((p0, p1))
+                update_candidates(candidate_positions[digit][0], digit)
     for col in col_list:
-        candidate_positions = {}
-        for i in range(1, 10):
-            candidate_positions[str(i)] = []
+        candidate_positions = defaultdict(lambda: [])
         for pos in col:
             if pos in candidates:  # if cell is empty
                 for i in candidates[pos]:
-                    candidate_positions[str(i)].append(pos)
+                    candidate_positions[i].append(pos)
         for digit in candidate_positions:
             if len(candidate_positions[digit]) == 1:
-                board[candidate_positions[digit][0][0], candidate_positions[digit][0][1]] = int(digit)
-                solved_cells.append((candidate_positions[digit][0][0], candidate_positions[digit][0][1]))
-                update_candidates(candidate_positions[digit][0], int(digit))
+                p0, p1 = candidate_positions[digit][0][0], candidate_positions[digit][0][1]
+                board[p0, p1] = digit
+                steps.append(('Hidden Single', digit, (p0, p1)))
+                solved_cells.append((p0, p1))
+                update_candidates(candidate_positions[digit][0], digit)
     for box in box_list:
-        candidate_positions = {}
-        for i in range(1, 10):
-            candidate_positions[str(i)] = []
+        candidate_positions = defaultdict(lambda: [])
         for pos in box:
             if pos in candidates:  # if cell is empty
                 for i in candidates[pos]:
-                    candidate_positions[str(i)].append(pos)
+                    candidate_positions[i].append(pos)
         for digit in candidate_positions:
             if len(candidate_positions[digit]) == 1:
-                board[candidate_positions[digit][0][0], candidate_positions[digit][0][1]] = int(digit)
-                solved_cells.append((candidate_positions[digit][0][0], candidate_positions[digit][0][1]))
-                update_candidates(candidate_positions[digit][0], int(digit))
+                p0, p1 = candidate_positions[digit][0][0], candidate_positions[digit][0][1]
+                board[p0, p1] = digit
+                steps.append(('Hidden Single', digit, (p0, p1)))
+                solved_cells.append((p0, p1))
+                update_candidates(candidate_positions[digit][0], digit)
     pop_solved(solved_cells)
 
 
-def locked_candidates():
+def naked_subsets(steps, n=2):  # n=2 -> pairs, n=3 -> triples, n=4 -> quads
+    """Checks for pairs, triples and quads in the row/column/box and deletes those digits from
+        candidates for other cells in the row/column/box"""
+    if n < 2 or n > 4:
+        print('Invalid n!')
+        return
+    # row
+    for row in row_list:
+        empty_positions = []
+        for pos in row:
+            if pos in candidates:
+                empty_positions.append(pos)  # lists all empty cells in row 'i'
+        combinations_list = list(combinations(empty_positions, n))  # all combinations of n empty cells in the row
+        for comb in combinations_list:
+            set1 = set()
+            for p in comb:
+                set1.update(candidates[p])  # found a naked subset
+            if len(set1) == n:
+                steps.append((f'Naked {["Pair", "Triple", "Quad"][n - 2]}', comb))
+                for item in empty_positions:  # item in list of empty cells in the row
+                    if item not in comb:  # not a cell that makes the pair
+                        for number in set1:  # deletes pair from other cells
+                            if number in candidates[item]:
+                                candidates[item].remove(number)
+    # column
+    for col in col_list:
+        empty_positions = []
+        for pos in col:
+            if pos in candidates:
+                empty_positions.append(pos)  # lists all empty cells in col 'i'
+        combinations_list = list(combinations(empty_positions, n))  # all combinations of n empty cells in the column
+        for comb in combinations_list:
+            set1 = set()
+            for p in comb:
+                set1.update(candidates[p])  # found a naked subset
+            if len(set1) == n:
+                steps.append((f'Naked {["Pair", "Triple", "Quad"][n - 2]}', comb))
+                for item in empty_positions:  # item in list of empty cells in the column
+                    if item not in comb:  # not a cell that makes the pair
+                        for number in set1:  # deletes pair from other cells
+                            if number in candidates[item]:
+                                candidates[item].remove(number)
+    # box
+    for box in box_list:
+        empty_positions = []
+        for pos in box:
+            if pos in candidates:
+                empty_positions.append(pos)  # lists all empty cells in box 'i'
+        combinations_list = list(combinations(empty_positions, n))  # all combinations of n empty cells in the box
+        for comb in combinations_list:
+            set1 = set()
+            for p in comb:
+                set1.update(candidates[p])
+            if len(set1) == n:
+                steps.append((f'Naked {["Pair", "Triple", "Quad"][n - 2]}', comb))
+                for item in empty_positions:  # item in list of empty cells in the box
+                    if item not in comb:  # not a cell that makes the pair
+                        for number in set1:  # deletes pair from other cells
+                            if number in candidates[item]:
+                                candidates[item].remove(number)
+
+
+def locked_candidates(steps):
     """If all possible cells for a candidate in a box are in the same row/column,
        deletes that candidate from the rest of the row/column.
        If all possible cells for a candidate in a row/box are in the same box,
        deletes that candidate from the rest of the box. """
     # box
     for i, box in enumerate(box_list):
-        candidates_position = dict()
-        for j in range(1, 10):
-            candidates_position[str(j)] = list()
+        candidates_position = defaultdict(lambda: [])
         for pos in box:
             if pos in candidates:
                 for item in candidates[pos]:
@@ -201,9 +263,7 @@ def locked_candidates():
                             candidates[c].remove(int(digit))
     # row
     for r, row in enumerate(row_list):
-        candidates_position = dict()
-        for i in range(1, 10):
-            candidates_position[str(i)] = list()
+        candidates_position = defaultdict(lambda: [])
         for pos in row:
             if pos in candidates:  # if cell is empty
                 for item in candidates[pos]:
@@ -219,9 +279,7 @@ def locked_candidates():
                             candidates[b].remove(int(digit))
     # col
     for c, col in enumerate(col_list):
-        candidates_position = dict()
-        for i in range(1, 10):
-            candidates_position[str(i)] = list()
+        candidates_position = defaultdict(lambda: [])
         for pos in col:
             if pos in candidates:  # if cell is empty
                 for item in candidates[pos]:
@@ -237,68 +295,7 @@ def locked_candidates():
                             candidates[b].remove(int(digit))
 
 
-def naked_subsets(n=2):  # n=2 -> pairs, n=3 -> triples, n=4 -> quads
-    """Checks for pairs, triples and quads in the row/column/box and deletes those digits from
-        candidates for other cells in the row/column/box"""
-    if n < 2 or n > 4:
-        print('Invalid n!')
-        return
-    # row
-    for i, row in enumerate(row_list):
-        empty_positions = list()
-        for pos in row:
-            if pos in candidates:
-                empty_positions.append(pos)  # lists all empty cells in row 'i'
-        combinations_list = list(combinations(empty_positions, n))  # all combinations of n empty cells in the row
-        for c in combinations_list:
-            set1 = set()
-            for p in c:
-                set1.update(candidates[p])
-            if len(set1) == n:
-                for item in empty_positions:  # item in list of empty cells in the row
-                    if item not in c:  # not a cell that makes the pair
-                        for number in set1:  # deletes pair from other cells
-                            if number in candidates[item]:
-                                candidates[item].remove(number)
-
-    # column
-    for i, col in enumerate(col_list):
-        empty_positions = list()
-        for pos in col:
-            if pos in candidates:
-                empty_positions.append(pos)  # lists all empty cells in col 'i'
-        combinations_list = list(combinations(empty_positions, n))  # all combinations of n empty cells in the column
-        for c in combinations_list:
-            set1 = set()
-            for p in c:
-                set1.update(candidates[p])
-            if len(set1) == n:
-                for item in empty_positions:  # item in list of empty cells in the column
-                    if item not in c:  # not a cell that makes the pair
-                        for number in set1:  # deletes pair from other cells
-                            if number in candidates[item]:
-                                candidates[item].remove(number)
-
-    # box
-    for i, box in enumerate(box_list):
-        empty_positions = list()
-        for pos in box:
-            if pos in candidates:
-                empty_positions.append(pos)  # lists all empty cells in box 'i'
-        combinations_list = list(combinations(empty_positions, n))  # all combinations of n empty cells in the box
-        for c in combinations_list:
-            set1 = set()
-            for p in c:
-                set1.update(candidates[p])
-            if len(set1) == n:
-                for item in empty_positions:  # item in list of empty cells in the box
-                    if item not in c:  # not a cell that makes the pair
-                        for number in set1:  # deletes pair from other cells
-                            if number in candidates[item]:
-                                candidates[item].remove(number)
-
-
-def x_wing():
+def x_wing(steps):
     # row x-wing
     # list of dictionaries of type 'candidate number': possible positions
     candidates_positions = [{str(n): list() for n in range(1, 10)} for _ in range(9)]
@@ -325,7 +322,6 @@ def x_wing():
                     for c in col_list[s]:
                         if c in candidates and n in candidates[c] and c[0] not in rows:
                             candidates[c].remove(n)
-
     # col x-wing
     # list of dictionaries of type 'candidate number': possible positions
     candidates_positions = [{str(n): list() for n in range(1, 10)} for _ in range(9)]
@@ -354,7 +350,7 @@ def x_wing():
                             candidates[r].remove(n)
 
 
-def y_wing():
+def y_wing(steps):
     possible_pivots = [pos for pos in candidates if len(candidates[pos]) == 2]
     found_wing = False
     for item in possible_pivots:
@@ -375,7 +371,6 @@ def y_wing():
             if len(candidates[b]) == 2 and not all([item[k] == b[k] for k in range(2)]):
                 if sum(i in candidates[b] for i in candidates[item]) == 1:
                     boxes.append(b)
-
         # found candidate squares for the pincers
         if len(rows) > 0:  # row + col or row + box Y-wing
             for r in rows:
@@ -408,7 +403,6 @@ def y_wing():
                     break  # breaks rows loop
             if found_wing:
                 continue  # breaks pivot loop
-
         if len(cols) > 0:  # row + col or row + box Y-wing
             for c in cols:
                 found_wing = False
@@ -467,24 +461,27 @@ def backtracking():
 
 def solver():
     global candidates, solved, board
+    steps = []
     is_valid = valid_board()
     if board.size and not is_valid[0]:
         return (np.array([]), is_valid[1])
+    empty_cells = digits_left()
+    if empty_cells == 0:
+        print(f'\nProblem already solved!\n')
+        return (board, 'The problem is already solved!')
     candidates = {}
     solved = False
     k = 1
     double_check = 0
-    empty_cells = digits_left()
     while not solved and empty_cells > 0:
         update_board(k)
-        naked_single()
-        hidden_single()
+        naked_single(steps)
+        hidden_single(steps)
         for i in [2, 3, 4]:  # naked pairs, triples and quads
-            naked_subsets(i)
-        locked_candidates()
-        x_wing()
-        y_wing()
-        # TODO: swordfish and coloring techniques
+            naked_subsets(steps, i)
+        locked_candidates(steps)
+        x_wing(steps)
+        y_wing(steps)
         solved = check_solved()
         k += 1
         if digits_left() == empty_cells:  # no new filled cells, avoids infinite loop

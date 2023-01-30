@@ -84,6 +84,10 @@ class App(tk.Frame):
         pos_x, pos_y =  H + (W - H) // 2, CELL_SIZE // 2
         self.canvas.create_text(pos_x, pos_y, text=text, font='Verdana 13', tag='txt', anchor='center')
 
+    def _change_color(self, entry, original):
+        entry.config(bg='#FFCCCB')
+        entry.after(2000, lambda: entry.config(bg=original))
+
     def solve_board(self):
         """Solves the current board"""
         for p in range(9):
@@ -97,6 +101,8 @@ class App(tk.Frame):
         board_solved, msg = self.solve_board()
         if not board_solved.size:
             messagebox.showinfo(title='Error', message=msg, icon='error')
+            pos = 9 * int(msg[-5]) + int(msg[-2])
+            self._change_color(self.entries[pos], self.entries[pos].cget('bg'))
             return
         print(f'Showing answers...\n')
         for p in range(9):
@@ -107,7 +113,7 @@ class App(tk.Frame):
                 else:
                     self.entries[9 * p + q].config(state='readonly', fg='#3C0238')
         if msg:
-            messagebox.showinfo(title='Dancing Links', message=msg, icon='warning')
+            messagebox.showinfo(title='Solved', message=msg, icon='info')
 
     def show_answers(self, text, width=11, height=1):
         pos_x, pos_y =  H + (W - H) // 6, CELL_SIZE * 3
@@ -219,7 +225,7 @@ class App(tk.Frame):
                                 icon='error')
     def read_image(self, k, text='Load Image', width=11, height=1):
         _ = k
-        pos_x, pos_y =  H + (W - H) // 6, CELL_SIZE * 6
+        pos_x, pos_y =  H + (W - H) // 6, CELL_SIZE * 5
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width,
                            command=self._read_image_cmd)
         Hovertip(button, 'Read a Sudoku problem from image')
