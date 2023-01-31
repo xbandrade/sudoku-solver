@@ -3,8 +3,10 @@ import numpy as np
 import webbrowser
 import sudoku_solver
 import sudoku_lists
+import sudoku_generator
 from tkinter import messagebox
 from tkinter import filedialog as fd
+from tkinter import simpledialog as sd
 from idlelib.tooltip import Hovertip
 from config import *
 from ocr import ocr
@@ -26,7 +28,9 @@ def info():
             '- X-wing',
             '- XY-wing',
             'If the problem can\'t be solved by these techniques,',
-            'the Dancing Links (DLX) technique will be used.'
+            'the Dancing Links (DLX) technique will be used.',
+            'A random problem can also be generated using the',
+            'difficulty dropdown list.'
             ]
     messagebox.showinfo(title='Info', message='\n'.join(text))
 
@@ -53,8 +57,10 @@ class App(tk.Frame):
         self.master = master
         self.canvas = canvas
         self.selected_board = None
+        self.diff = None
         self.entries = []
         self.value_inside = tk.StringVar(self.canvas)
+        self.diff_inside = tk.StringVar(self.canvas)
         self.img = tk.PhotoImage(file='img/github.png')
         self.info = tk.PhotoImage(file='img/info.png')
 
@@ -77,8 +83,11 @@ class App(tk.Frame):
                 entry.place(x=col, y=row, width=CELL_SIZE, height=CELL_SIZE)
                 self.entries.append(entry)
 
-    def _dropdown_selection(self, selection):
+    def _dropdown_board(self, selection):
         self.selected_board = selection
+
+    def _dropdown_diff(self, selection):
+        self.diff = selection
 
     def board_text(self, text):
         pos_x, pos_y =  H + (W - H) // 2, CELL_SIZE // 2
@@ -116,7 +125,7 @@ class App(tk.Frame):
             messagebox.showinfo(title='Solved', message=msg, icon='info')
 
     def show_answers(self, text, width=11, height=1):
-        pos_x, pos_y =  H + (W - H) // 6, CELL_SIZE * 3
+        pos_x, pos_y =  H + (W - H) // 6, CELL_SIZE * 3.5
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width, anchor='center')
         button.config(command=self._show_answers_cmd)
         Hovertip(button, 'Solve the current board')
@@ -130,7 +139,7 @@ class App(tk.Frame):
                     self.entries[9 * p + q].delete(0, tk.END)
 
     def hide_answers(self, text, width=11, height=1):
-        pos_x, pos_y =  H + 3 * (W - H) // 6, CELL_SIZE * 3
+        pos_x, pos_y =  H + 3 * (W - H) // 6, CELL_SIZE * 3.5
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width, anchor='center')
         button.config(command=self._hide_answers_cmd)
         Hovertip(button, 'Hide answers of the current board')
@@ -144,11 +153,11 @@ class App(tk.Frame):
             self.entries[p].config(state='normal', fg='#3C0238')
             self.entries[p].delete(0, tk.END)
         self.board_text(f'Custom board')
-        self.value_inside.set('Custom')
+        self.value_inside.set('Custom ')
         self.selected_board = None
 
     def clear_board(self, text, width=11, height=1):
-        pos_x, pos_y =  H + (W - H) // 6, CELL_SIZE * 4
+        pos_x, pos_y =  H + (W - H) // 6, CELL_SIZE * 4.5
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width,
                            command=self._clear_board_cmd)
         Hovertip(button, 'Clear all entries')
@@ -163,7 +172,7 @@ class App(tk.Frame):
         messagebox.showinfo(title='Success', message='All cells are now editable!')
 
     def edit_board(self, text, width=11, height=1):
-        pos_x, pos_y =  H + 3 * (W - H) // 6, CELL_SIZE * 4
+        pos_x, pos_y =  H + 3 * (W - H) // 6, CELL_SIZE * 4.5
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width,
                            command=self._edit_board_cmd)
         Hovertip(button, 'Make all cells editable')
@@ -192,13 +201,14 @@ class App(tk.Frame):
                     self.entries[9 * p + q].config(state='readonly')
         print(f'\nBoard #{board_number} loaded!')
 
-    def load_board(self, text):
+    def load_board(self, text, width=11, height=1):
         pos_x1, pos_x2, pos_y =  H + (W - H) // 3, H + 2 * (W - H) // 3, CELL_SIZE * 1.5
         b_list = [f'{text} {x}' for x in range(1, 11)]
-        self.value_inside.set('Custom')
-        dropdown = tk.OptionMenu(self.canvas, self.value_inside, *b_list, command=self._dropdown_selection)
+        self.value_inside.set('Custom ')
+        dropdown = tk.OptionMenu(self.canvas, self.value_inside, *b_list, command=self._dropdown_board)
         dropdown.place(x=pos_x1, y=pos_y, anchor='center')
-        load_button = tk.Button(self.canvas, text='Load Board', command=self._load_button_cmd)
+        load_button = tk.Button(self.canvas, text='Load Board', command=self._load_button_cmd, 
+                                width=width, height=height)
         load_button.place(x=pos_x2, y=pos_y, anchor='center')
         Hovertip(load_button, 'Load the selected board')
 
@@ -223,13 +233,40 @@ class App(tk.Frame):
         else:
             messagebox.showinfo(title='Error', message='Could not find a Sudoku board in the image', 
                                 icon='error')
-    def read_image(self, k, text='Load Image', width=11, height=1):
+            
+    def read_image(self, k, text='Load Image', width=12, height=1):
         _ = k
-        pos_x, pos_y =  H + (W - H) // 6, CELL_SIZE * 5
+        pos_x, pos_y =  H + (W - H) // 3, CELL_SIZE * 5.5
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width,
                            command=self._read_image_cmd)
         Hovertip(button, 'Read a Sudoku problem from image')
         button.place(x=pos_x, y=pos_y)
+
+    def _generate_board(self):
+        if not self.diff:
+            messagebox.showinfo(title='Warning', message='Select a difficulty from the list', icon='warning')
+            return
+        sudoku_solver.board = np.copy(sudoku_generator.generate(self.diff))
+        sudoku_solver.board_start = np.copy(sudoku_solver.board)            
+        for p in range(9):
+            for q in range(9):
+                self.entries[9 * p + q].config(state='normal', fg='#3C0238')
+                self.entries[9 * p + q].delete(0, tk.END)
+                if sudoku_solver.board_start[p, q] != 0:
+                    self.entries[9 * p + q].insert(0, sudoku_solver.board[p, q])
+                    self.entries[9 * p + q].config(state='readonly')
+        print(f'\n{self.diff} board generated!')
+    
+    def generate_board(self, text, width=11, height=1):
+        pos_x1, pos_x2, pos_y =  H + (W - H) // 3, H + 2 * (W - H) // 3, CELL_SIZE * 2.5
+        diff_list = ['Easy', 'Medium', 'Hard', 'Expert', 'Evil', 'Random']
+        self.diff_inside.set('Difficulty')
+        dropdown = tk.OptionMenu(self.canvas, self.diff_inside, *diff_list, command=self._dropdown_diff)
+        dropdown.place(x=pos_x1, y=pos_y, anchor='center')
+        button = tk.Button(self.canvas, text=f'{text}', height=height, width=width,
+                           command=self._generate_board)
+        button.place(x=pos_x2, y=pos_y, anchor='center')
+        Hovertip(button, 'Generate a random sudoku puzzle')
 
     def info_button(self, text='Info', width=32, height=32):
         button = tk.Button(self.canvas, text=f'{text}', height=height, width=width,
