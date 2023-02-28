@@ -1,13 +1,15 @@
 import tkinter as tk
-import numpy as np
 import webbrowser
-import sudoku_solver
-import sudoku_lists
-import sudoku_generator
-from tkinter import messagebox
 from tkinter import filedialog as fd
+from tkinter import messagebox
 from tkinter import simpledialog as sd
+
+import numpy as np
 from idlelib.tooltip import Hovertip
+
+import sudoku_generator
+import sudoku_lists
+import sudoku_solver
 from config import *
 from ocr import ocr
 
@@ -30,7 +32,10 @@ def info():
             'If the problem can\'t be solved by these techniques,',
             'the Dancing Links (DLX) technique will be used.',
             'A random problem can also be generated using the',
-            'difficulty dropdown list.'
+            'difficulty dropdown list.',
+            '\n[!!] Press F3 to show the OCR Button. Be aware that this',
+            'option can fail to recognize the grid numbers depending',
+            'on the image quality.'
             ]
     messagebox.showinfo(title='Info', message='\n'.join(text))
 
@@ -214,7 +219,7 @@ class App(tk.Frame):
 
     def _read_image_cmd(self):
         path = fd.askopenfilename()
-        if not path or path[-4:] not in ('.png', '.jpg', 'jpeg'):
+        if not path or path[-4:] not in ('.png', '.jpg', 'jpeg', 'webp'):
             messagebox.showinfo(title='Error', message=r'Invalid file type', icon='error')
             return
         read_board = ocr(path)

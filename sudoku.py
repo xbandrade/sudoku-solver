@@ -1,7 +1,8 @@
 import tkinter as tk
+
 import sudoku_solver
 from app import App
-from config import *
+from config import H, W
 
 
 def main():
@@ -23,7 +24,7 @@ def main():
     app.clear_board('Clear Board')
     app.edit_board('Edit Board')
     app.generate_board('Generate')
-    root.bind('<F3>', app.read_image)
+    root.bind('<F3>', app.read_image)  # Press F3 to show the hidden button
     app.info_button()
     app.github_button()
     app.mainloop()
