@@ -2,7 +2,7 @@
 ### **Sudoku Solver in Python**
 
 #### ❕Fill in the grid with a sudoku problem or choose a board from the dropdown menu, then click the Solve Board button.
-#### ❕You can also generate a random board with Easy, Medium, Hard, Expert or Evil difficulty, or read a sudoku board from an image using the hidden Load Board button.
+#### ❕You can also generate a random board with Easy, Medium, Hard, Expert or Evil difficulty, or read a sudoku board from an image using the hidden Load Image button.
 
 &nbsp; <img src="https://raw.githubusercontent.com/xbandrade/sudoku-solver/master/img/ocrboard.png" width=60% height=60%> <img src="https://raw.githubusercontent.com/xbandrade/sudoku-solver/master/img/board.webp" width=28% height=28%>
 
